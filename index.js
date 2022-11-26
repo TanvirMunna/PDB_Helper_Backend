@@ -34,11 +34,25 @@ async function run() {
             const result = await addedProductsCollection.insertOne(products);
             res.send(result);
         });
+        app.get('/jwt', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            console.log(user);
+            if (user) {
+                const token = jwt.sign({ email }, process.env.JWT_TOKEN, { expiresIn: '1d' });
+                return res.send({ accessToken: token });
+            }
+
+            res.status(403).send("");
+        })
         app.post('/users', async (req, res) => {
             const user = req.body;
             const result = await usersCollection.insertOne(user);
             res.send(result);
         });
+
+      
 
         // get operation
         
