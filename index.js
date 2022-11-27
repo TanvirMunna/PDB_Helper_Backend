@@ -130,6 +130,14 @@ async function run() {
             res.send(brands);
         });
 
+        // allUser for admin
+        app.get('/allBuyers', async (req, res) => {
+            const query = {};
+            const allBuyers = await orderCollection.find(query).toArray();
+            res.send(allBuyers);
+        });
+
+        // need data filter
         app.get('/allBuyers', async (req, res) => {
             const query = {};
             const allBuyers = await orderCollection.find(query).toArray();
