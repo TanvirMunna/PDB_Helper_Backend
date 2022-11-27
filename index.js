@@ -12,13 +12,30 @@ app.use(express.json());
 
 
 
-// jwt token function
 
 // database connection
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.cnhrqkg.mongodb.net/?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+
+// jwt token function
+
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send('Unauthorized');
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.JWT_TOKEN, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({message: 'Forbidden access '})
+        }
+        req.decoded = decoded;
+        next();
+    })
+}
+
 
 async function run() {
     try {
@@ -27,6 +44,7 @@ async function run() {
 
         const brandsCollection = client.db('SmartResaleStall').collection('brands');
         const usersCollection = client.db('SmartResaleStall').collection('users');
+        const orderCollection = client.db('SmartResaleStall').collection('buyers');
 
         // Post operation
         app.post('/addedProducts', async (req, res) => {
@@ -34,6 +52,14 @@ async function run() {
             const result = await addedProductsCollection.insertOne(products);
             res.send(result);
         });
+
+        app.post('/ordered', async (req, res) => {
+            const orders = req.body;
+            const result = await orderCollection.insertOne(orders);
+            res.send(result);
+        });
+
+        /*
         app.get('/jwt', async (req, res) => {
             const email = req.query.email;
             const query = { email: email };
@@ -44,8 +70,9 @@ async function run() {
                 return res.send({ accessToken: token });
             }
 
-            res.status(403).send("");
-        })
+            res.status(403).send({accessToken: ''});
+        });
+        */
         app.post('/users', async (req, res) => {
             const user = req.body;
             const result = await usersCollection.insertOne(user);
@@ -57,16 +84,39 @@ async function run() {
         // get operation
         
         app.get('/addedProducts', async (req, res) => {
+            
             const query = {};
             const products = await addedProductsCollection.find(query).toArray();
             res.send(products);
         });
+
+        //not yet used 
+        app.get('/users', async (req, res) => {
+            const query = {};
+            const users = await usersCollection.find(query).toArray();
+            res.send(users);
+        });
+
         app.get('/addedProducts', async (req, res) => {
             const email = req.query.email;
+            
+            const decodedEmail = req.decoded.email;
+
+            if (email !== decodedEmail) {
+                return res.status(403).send({ message: "Forbidden access" })
+            }
             const query = { sellerEmail: email };
             const addedProducts = await addedProductsCollection.find(query).toArray();
             res.send(addedProducts);
-        })
+        });
+
+        app.get('/orderedProducts/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await addedProductsCollection.findOne(query);
+            res.send(result);
+        });
+
         app.get('/brands', async (req, res) => {
             const query = {};
             const brands = await brandsCollection.find(query).toArray();
@@ -74,16 +124,20 @@ async function run() {
         });
     
         app.get('/selectedBrand', async (req, res) => {
-            console.log(req.query.email);
-            let query = {};
-            if (req.query.email) {
-                query = {
-                    brand: req.query.email
-                }
-            }
-            const selectedBrand = await addedProductsCollection.find(query).toArray();
+            const query = {};
+            const selectedBrand = await brandsCollection.find(query).toArray();
+            selectedBrand.map(brand => {
+                console.log(brand.brand)
+            })
+            console.log(selectedBrand.brand);
             res.send(selectedBrand);
         });
+
+        app.get('/allBuyers', async (req, res) => {
+            const query = {};
+            const allBuyers = await orderCollection.find(query).toArray();
+            res.send(allBuyers);
+        })
 
         // Put operation
 
