@@ -29,7 +29,7 @@ function verifyJWT(req, res, next) {
     const token = authHeader.split(' ')[1];
     jwt.verify(token, process.env.JWT_TOKEN, function (err, decoded) {
         if (err) {
-            return res.status(403).send({message: 'Forbidden access '})
+            return res.status(403).send({ message: 'Forbidden access ' })
         }
         req.decoded = decoded;
         next();
@@ -74,7 +74,7 @@ async function run() {
                 return res.send({ accessToken: token });
             }
 
-            res.status(403).send({accessToken: ''});
+            res.status(403).send({ accessToken: '' });
         });
 
         app.post('/users', async (req, res) => {
@@ -83,12 +83,12 @@ async function run() {
             res.send(result);
         });
 
-      
+
 
         // get operation
-        
+
         app.get('/addedProducts', async (req, res) => {
-            
+
             const query = {};
             const products = await addedProductsCollection.find(query).toArray();
             res.send(products);
@@ -108,15 +108,15 @@ async function run() {
         });
 
         app.get('/allBrandsProducts/:id', async (req, res) => {
-            const id = req.params.id; 
+            const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const selectedBrandById = await productCollections.findOne(query);
             res.send(selectedBrandById);
         })
 
-        app.get('/addedProducts', verifyJWT, async (req, res) => {
+        app.get('/addedProductsAll', verifyJWT, async (req, res) => {
             const email = req.query.email;
-            
+
             const decodedEmail = req.decoded.email;
 
             if (email !== decodedEmail) {
@@ -126,6 +126,17 @@ async function run() {
             const addedProducts = await addedProductsCollection.find(query).toArray();
             res.send(addedProducts);
         });
+
+        app.get('/specificAddedProduct', async (req, res) => {
+            let query = {};
+            if (req.query.email) {
+                query = {
+                    email: req.query.email
+                }
+            }
+            const products = await addedProductsCollection.find(query).toArray();
+            res.send(products)
+        })
 
         app.get('/orderedProducts/:id', async (req, res) => {
             const id = req.params.id;
@@ -139,7 +150,7 @@ async function run() {
             const brands = await brandsCollection.find(query).toArray();
             res.send(brands);
         });
-    
+
         app.get('/selectedBrand/:brand', async (req, res) => {
             const brandName = req.query.brand;
             const query = { brand: brandName };
@@ -154,12 +165,24 @@ async function run() {
             res.send(allBuyers);
         });
 
-        // need data filter
+        // all buyers for admin
         app.get('/allBuyers', async (req, res) => {
             const query = {};
             const allBuyers = await orderCollection.find(query).toArray();
             res.send(allBuyers);
-        })
+        });
+
+        // specific buyers 
+        app.get('/specificBuyer', async (req, res) => {
+            let query = {};
+            if (req.query.email) {
+                query = {
+                    email: req.query.email
+                }
+            }
+            const allBuyers = await orderCollection.find(query).toArray();
+            res.send(allBuyers);
+        });
 
         // Delete operation
         app.delete('/products/:id', async (req, res) => {
@@ -185,7 +208,7 @@ async function run() {
 
     }
     finally {
-        
+
     }
 }
 
