@@ -40,10 +40,14 @@ function verifyJWT(req, res, next) {
 async function run() {
     try {
         // collections
+        const productCollections = client.db('SmartResaleStall').collection('ProductCollections');
+
         const addedProductsCollection = client.db('SmartResaleStall').collection('AllProducts');
 
         const brandsCollection = client.db('SmartResaleStall').collection('brands');
+
         const usersCollection = client.db('SmartResaleStall').collection('users');
+
         const orderCollection = client.db('SmartResaleStall').collection('buyers');
 
         // Post operation
@@ -96,6 +100,19 @@ async function run() {
             const users = await usersCollection.find(query).toArray();
             res.send(users);
         });
+
+        app.get('/allBrandsProducts', async (req, res) => {
+            const query = {};
+            const allBrandsProducts = await productCollections.find(query).toArray();
+            res.send(allBrandsProducts);
+        });
+
+        app.get('/allBrandsProducts/:id', async (req, res) => {
+            const id = req.params.id; 
+            const query = { _id: ObjectId(id) };
+            const selectedBrandById = await productCollections.findOne(query);
+            res.send(selectedBrandById);
+        })
 
         app.get('/addedProducts', verifyJWT, async (req, res) => {
             const email = req.query.email;
