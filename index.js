@@ -70,7 +70,7 @@ async function run() {
             const user = await usersCollection.findOne(query);
             console.log(user);
             if (user) {
-                const token = jwt.sign({ email }, process.env.JWT_TOKEN, { expiresIn: '1d' });
+                const token = jwt.sign({ email }, process.env.JWT_TOKEN, { expiresIn: '7d' });
                 return res.send({ accessToken: token });
             }
 
@@ -87,6 +87,13 @@ async function run() {
 
         // get operation
 
+        app.get('/users', async (req, res) => {
+            const query = {};
+            const users = await usersCollection.find(query).toArray();
+            res.send(users);
+
+        })
+
         app.get('/addedProducts', async (req, res) => {
 
             const query = {};
@@ -95,11 +102,31 @@ async function run() {
         });
 
         //not yet used 
-        app.get('/users', async (req, res) => {
-            const query = {};
-            const users = await usersCollection.find(query).toArray();
-            res.send(users);
+        app.put('/users/admin/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const option = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    userType: 'admin'
+                }
+            }
+            const user = await usersCollection.updateOne(filter, updateDoc, option);
+            res.send(user);
         });
+
+        app.put('/addedProducts/verified/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const option = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    role: 'verified'
+                }
+            }
+            const result = await addedProductsCollection.updateOne(filter, updateDoc, option);
+            res.send(result);
+        })
 
         app.get('/allBrandsProducts', async (req, res) => {
             const query = {};
